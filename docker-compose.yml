@@ -1,0 +1,99 @@
+# FaceProof — full local stack.
+#
+#   docker compose up --build
+#
+# Brings up: a local Hardhat EVM chain, a one-shot contract deployer, the
+# FastAPI backend, and the built React frontend.
+#
+#   Frontend  -> http://localhost:5173
+#   Backend   -> http://localhost:8000  (docs at /api/docs)
+#   Hardhat   -> http://localhost:8545  (chainId 31337)
+#
+# First backend start downloads the InsightFace model (~100 MB) — give it a
+# minute. In demo search mode, run `python -m scripts.make_demo_data` inside the
+# backend container (or set SEARCH_PROVIDER=google_cse with keys) first.
+
+services:
+  hardhat:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./contracts:/app
+      - hardhat_modules:/app/node_modules
+    command: sh -c "npm install && npx hardhat node --hostname 0.0.0.0"
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8545',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_blockNumber',params:[]})}).then(()=>process.exit(0)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  deployer:
+    image: node:20
+    working_dir: /app
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    volumes:
+      - ./contracts:/app
+      - ./backend:/backend
+      - hardhat_modules:/app/node_modules
+    command: sh -c "npm install && npx hardhat run scripts/deploy.js --network docker"
+    restart: "no"
+
+  backend:
+    build: ./backend
+    depends_on:
+      deployer:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: development
+      BLOCKCHAIN_RPC_URL: http://hardhat:8545
+      BLOCKCHAIN_CHAIN_ID: "31337"
+      BLOCKCHAIN_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+      DEPLOYMENTS_DIR: /deployments
+      DATABASE_URL: sqlite:////app/data/faceproof.db
+      UPLOAD_DIR: /app/data/uploads
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-demo}
+      GOOGLE_CSE_API_KEY: ${GOOGLE_CSE_API_KEY:-}
+      GOOGLE_CSE_CX: ${GOOGLE_CSE_CX:-}
+      FACE_MATCH_THRESHOLD: ${FACE_MATCH_THRESHOLD:-0.35}
+    volumes:
+      - ./contracts/deployments:/deployments:ro
+      - backend_data:/app/data
+      - face_models:/app/.insightface
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+
+  # Optional Postgres — enable with:  docker compose --profile postgres up
+  # and set backend DATABASE_URL to the postgresql+psycopg URL below
+  # (add `psycopg[binary]` to backend/requirements.txt).
+  database:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: faceproof
+      POSTGRES_PASSWORD: faceproof
+      POSTGRES_DB: faceproof
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+volumes:
+  hardhat_modules:
+  backend_data:
+  face_models:
+  pg_data:

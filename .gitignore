@@ -1,0 +1,65 @@
+# ---- Secrets ----
+.env
+*.env
+!.env.example
+**/.env
+backend/.env
+contracts/.env
+frontend/.env
+*.key
+*.pem
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.sqlite3
+*.db
+backend/faceproof.db
+backend/data/
+backend/uploads/
+backend/.cache/
+
+# ---- Face models cache ----
+~/.insightface/
+models/
+
+# ---- Node / Frontend ----
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+frontend/dist/
+
+# ---- Hardhat / Solidity ----
+contracts/node_modules/
+contracts/artifacts/
+contracts/cache/
+contracts/coverage/
+contracts/typechain-types/
+# Generated deployment info consumed by backend is committed intentionally:
+!contracts/deployments/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# TS build info
+*.tsbuildinfo
+
+# archives, local demo image, run logs
+*.zip
+/subject.jpg
+backend/subject.jpg
+run_nodocker.log
+docs/screens/

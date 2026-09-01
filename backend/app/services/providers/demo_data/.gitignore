@@ -1,0 +1,6 @@
+# Generated demo fixtures — not committed (synthetic faces + manifest)
+*.jpg
+*.jpeg
+*.png
+demo_dataset.json
+!README.md

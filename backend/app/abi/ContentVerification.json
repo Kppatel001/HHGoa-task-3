@@ -1,0 +1,70 @@
+[
+  {
+    "type": "function",
+    "name": "registerRecord",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "fingerprint", "type": "bytes32" },
+      { "name": "contentId", "type": "bytes32" },
+      { "name": "platform", "type": "string" },
+      { "name": "sourceUrlHash", "type": "bytes32" }
+    ],
+    "outputs": [{ "name": "recordId", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "getRecord",
+    "stateMutability": "view",
+    "inputs": [{ "name": "recordId", "type": "uint256" }],
+    "outputs": [
+      { "name": "fingerprint", "type": "bytes32" },
+      { "name": "contentId", "type": "bytes32" },
+      { "name": "timestamp", "type": "uint256" },
+      { "name": "submitter", "type": "address" },
+      { "name": "platform", "type": "string" },
+      { "name": "sourceUrlHash", "type": "bytes32" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "verifyRecord",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "recordId", "type": "uint256" },
+      { "name": "fingerprint", "type": "bytes32" }
+    ],
+    "outputs": [{ "name": "", "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "recordIdForFingerprint",
+    "stateMutability": "view",
+    "inputs": [{ "name": "fingerprint", "type": "bytes32" }],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "recordCount",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256" }]
+  },
+  {
+    "type": "event",
+    "name": "RecordRegistered",
+    "anonymous": false,
+    "inputs": [
+      { "name": "recordId", "type": "uint256", "indexed": true },
+      { "name": "fingerprint", "type": "bytes32", "indexed": true },
+      { "name": "contentId", "type": "bytes32", "indexed": false },
+      { "name": "submitter", "type": "address", "indexed": true },
+      { "name": "timestamp", "type": "uint256", "indexed": false }
+    ]
+  },
+  { "type": "error", "name": "EmptyFingerprint", "inputs": [] },
+  {
+    "type": "error",
+    "name": "UnknownRecord",
+    "inputs": [{ "name": "recordId", "type": "uint256" }]
+  }
+]

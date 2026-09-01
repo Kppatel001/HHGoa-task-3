@@ -1,0 +1,32 @@
+# ---- Web framework ----
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+pydantic-settings==2.7.1
+slowapi==0.1.9
+
+# ---- HTTP / scraping ----
+httpx==0.28.1
+beautifulsoup4==4.12.3
+
+# ---- Imaging / face ----
+numpy==1.26.4
+Pillow==11.1.0
+opencv-python-headless==4.10.0.84
+insightface==0.7.3
+onnxruntime==1.20.1
+
+# ---- Crypto / blockchain ----
+web3==7.6.1
+eth-account==0.13.4
+# In-process EVM (used when BLOCKCHAIN_MODE=memory — no external node needed)
+eth-tester==0.12.0b2
+py-evm==0.12.0b1
+
+# ---- Database ----
+SQLAlchemy==2.0.36
+
+# ---- Tests ----
+pytest==8.3.4
+pytest-asyncio==0.25.0

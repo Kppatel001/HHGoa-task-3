@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="Inter, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1120"/>
+      <stop offset="1" stop-color="#070b16"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <style>
+      .card { fill:#111a2e; stroke:#1e2a44; stroke-width:1; rx:12; }
+      .svc  { fill:#0e1830; stroke:#243459; stroke-width:1; }
+      .t    { fill:#e2e8f0; font-size:14px; font-weight:600; }
+      .st   { fill:#94a3b8; font-size:11px; }
+      .lbl  { fill:#7dd3fc; font-size:11px; font-weight:600; letter-spacing:1px; }
+      .edge { stroke:#64748b; stroke-width:1.5; fill:none; }
+    </style>
+  </defs>
+
+  <rect width="960" height="600" fill="url(#bg)"/>
+  <text x="40" y="44" fill="#ffffff" font-size="22" font-weight="700">FaceProof — System Architecture</text>
+  <text x="40" y="66" class="st">FACE → SEARCH → MATCH → FINGERPRINT → BLOCKCHAIN → VERIFY</text>
+
+  <!-- Frontend -->
+  <rect x="330" y="90" width="300" height="60" rx="12" class="card"/>
+  <text x="480" y="115" text-anchor="middle" class="t">React + TypeScript UI</text>
+  <text x="480" y="134" text-anchor="middle" class="st">Vite · Tailwind · TanStack Query · SSE</text>
+
+  <line x1="480" y1="150" x2="480" y2="185" class="edge" marker-end="url(#arrow)"/>
+  <text x="500" y="172" class="lbl">REST / SSE</text>
+
+  <!-- API -->
+  <rect x="330" y="185" width="300" height="60" rx="12" class="card"/>
+  <text x="480" y="210" text-anchor="middle" class="t">FastAPI · /api</text>
+  <text x="480" y="229" text-anchor="middle" class="st">validation · rate limit · CORS · SSRF guard</text>
+
+  <!-- three services -->
+  <line x1="420" y1="245" x2="180" y2="300" class="edge" marker-end="url(#arrow)"/>
+  <line x1="480" y1="245" x2="480" y2="300" class="edge" marker-end="url(#arrow)"/>
+  <line x1="540" y1="245" x2="780" y2="300" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="300" width="240" height="86" rx="12" class="svc"/>
+  <text x="180" y="325" text-anchor="middle" class="lbl">FACE PROCESSING</text>
+  <text x="180" y="345" text-anchor="middle" class="t">InsightFace</text>
+  <text x="180" y="364" text-anchor="middle" class="st">detection · 512-d embedding · quality</text>
+
+  <rect x="360" y="300" width="240" height="86" rx="12" class="svc"/>
+  <text x="480" y="325" text-anchor="middle" class="lbl">SEARCH ENGINE</text>
+  <text x="480" y="345" text-anchor="middle" class="t">Pluggable providers</text>
+  <text x="480" y="364" text-anchor="middle" class="st">Google CSE (genuine) · demo · face match</text>
+
+  <rect x="660" y="300" width="240" height="86" rx="12" class="svc"/>
+  <text x="780" y="325" text-anchor="middle" class="lbl">BLOCKCHAIN</text>
+  <text x="780" y="345" text-anchor="middle" class="t">Web3.py + Solidity</text>
+  <text x="780" y="364" text-anchor="middle" class="st">EVM (Hardhat/testnet) · tx receipt</text>
+
+  <!-- to fingerprint/verify -->
+  <line x1="180" y1="386" x2="440" y2="430" class="edge" marker-end="url(#arrow)"/>
+  <line x1="480" y1="386" x2="480" y2="430" class="edge" marker-end="url(#arrow)"/>
+  <line x1="780" y1="386" x2="520" y2="430" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="330" y="430" width="300" height="60" rx="12" class="card"/>
+  <text x="480" y="455" text-anchor="middle" class="t">Fingerprint + Verification Engine</text>
+  <text x="480" y="474" text-anchor="middle" class="st">canonical JSON → SHA-256 → compare on-chain</text>
+
+  <line x1="480" y1="490" x2="480" y2="520" class="edge" marker-end="url(#arrow)"/>
+
+  <rect x="300" y="520" width="360" height="54" rx="12" fill="#0e1a12" stroke="#1e3a2a"/>
+  <text x="480" y="544" text-anchor="middle" class="t">Audit Result: VERIFIED · TAMPERED · NOT VERIFIED</text>
+  <text x="480" y="562" text-anchor="middle" class="st">+ SQLite persistence · pipeline event trail</text>
+
+  <!-- side note -->
+  <rect x="700" y="430" width="220" height="60" rx="10" fill="#151b2e" stroke="#2a3550"/>
+  <text x="712" y="452" class="st">Privacy: public content &amp; authorized</text>
+  <text x="712" y="468" class="st">images only. No raw embeddings on</text>
+  <text x="712" y="484" class="st">chain. "Potential match", not identity.</text>
+</svg>
