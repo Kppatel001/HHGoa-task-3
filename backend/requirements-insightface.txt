@@ -1,0 +1,7 @@
+# OPTIONAL higher-accuracy face engine (512-d ArcFace embeddings).
+# Not required — the app uses the OpenCV engine automatically when this is
+# absent. InsightFace can need C++ build tools on Windows; install only if you
+# want the upgraded accuracy:
+#     pip install -r requirements-insightface.txt
+insightface==0.7.3
+onnxruntime==1.20.1

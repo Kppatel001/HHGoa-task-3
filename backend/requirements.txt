@@ -11,11 +11,15 @@ httpx==0.28.1
 beautifulsoup4==4.12.3
 
 # ---- Imaging / face ----
+# OpenCV is the always-available face engine (pure wheel, installs everywhere).
 numpy==1.26.4
 Pillow==11.1.0
 opencv-python-headless==4.10.0.84
-insightface==0.7.3
-onnxruntime==1.20.1
+# InsightFace (higher-accuracy 512-d embeddings) is OPTIONAL and can be hard to
+# build on Windows. It is intentionally NOT a base dependency so `pip install`
+# never fails because of it. To enable it:
+#     pip install -r requirements-insightface.txt
+# When present, the app uses it automatically; otherwise it uses the OpenCV engine.
 
 # ---- Crypto / blockchain ----
 web3==7.6.1

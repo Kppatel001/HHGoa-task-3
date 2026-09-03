@@ -38,8 +38,17 @@ Say "Installing dependencies (first run takes several minutes)..."
 if ($LASTEXITCODE -ne 0) {
   Say "FULL_INSTALL_FAILED -> installing core deps without the face model..."
   & $vpy -m pip install fastapi "uvicorn[standard]" pydantic pydantic-settings python-multipart slowapi httpx beautifulsoup4 numpy Pillow opencv-python-headless SQLAlchemy web3 eth-account eth-tester py-evm 2>&1 | Tee-Object -FilePath $log -Append
-  Say "NOTE: InsightFace unavailable -> using the built-in OpenCV face engine (all functions still run)."
 }
+# Safety net: make sure the OpenCV face engine is present no matter what.
+& $vpy -c "import cv2" 1>$null 2>$null
+if ($LASTEXITCODE -ne 0) {
+  Say "Ensuring OpenCV face engine is installed..."
+  & $vpy -m pip install opencv-python-headless 2>&1 | Tee-Object -FilePath $log -Append
+}
+# Optional accuracy upgrade (non-fatal if it can't build on Windows).
+Say "Trying optional InsightFace upgrade (skipped automatically if it won't install)..."
+& $vpy -m pip install insightface onnxruntime 2>&1 | Tee-Object -FilePath $log -Append
+if ($LASTEXITCODE -ne 0) { Say "InsightFace not installed -> using the OpenCV face engine (all functions still work)." }
 
 # ---- 4. demo dataset ----
 $env:SEARCH_PROVIDER = "demo"

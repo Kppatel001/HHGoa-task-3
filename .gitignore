@@ -63,3 +63,5 @@ logs/
 backend/subject.jpg
 run_nodocker.log
 docs/screens/
+
+/PUSH.bat
