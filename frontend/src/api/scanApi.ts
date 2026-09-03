@@ -24,3 +24,16 @@ export async function getScan(scanId: string) {
   const { data } = await api.get(`/scan/${scanId}`);
   return data;
 }
+
+// Single-request full pipeline (works on stateless/serverless hosts too):
+// upload -> face -> search -> match -> fingerprint -> blockchain -> verify.
+export async function runPipeline(file: File, query?: string, simulateTamper = false) {
+  const form = new FormData();
+  form.append("file", file);
+  if (query) form.append("query", query);
+  form.append("simulate_tamper", String(simulateTamper));
+  const { data } = await api.post("/pipeline", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}

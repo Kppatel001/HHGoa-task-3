@@ -1,10 +1,7 @@
-import { useCallback, useRef, useState } from "react";
-import { eventsUrl, parseError } from "../api/client";
-import { createScan, analyzeFace } from "../api/scanApi";
-import { runSearch, selectMatch } from "../api/searchApi";
-import { generateFingerprint, registerBlockchain } from "../api/blockchainApi";
-import { verify, type TamperOverrides } from "../api/verificationApi";
-import { EVENT_STAGE, initialStages, type StageMap } from "../lib/stages";
+import { useCallback, useState } from "react";
+import { parseError } from "../api/client";
+import { runPipeline } from "../api/scanApi";
+import { initialStages, STAGES, type StageMap } from "../lib/stages";
 import type {
   BlockchainResult,
   FaceAnalysis,
@@ -40,128 +37,86 @@ const EMPTY: PipelineState = {
   error: null,
 };
 
+function allStages(status: StageMap[string]): StageMap {
+  return Object.fromEntries(STAGES.map((s) => [s.key, status])) as StageMap;
+}
+
+// Derive stage statuses from a completed /api/pipeline response.
+function stagesFromResult(d: any): StageMap {
+  const s = { ...initialStages() };
+  s.upload = "success";
+  if (d?.face?.face_detected) { s.face = d.face.warning ? "warning" : "success"; s.embedding = "success"; }
+  else if (d?.face) s.face = "failed";
+  if (d?.search) s.search = "success";
+  const sim = d?.match?.similarity;
+  const thr = d?.search?.threshold;
+  if (sim != null && thr != null) s.match = sim >= thr ? "success" : "warning";
+  if (d?.fingerprint) s.fingerprint = "success";
+  if (d?.blockchain) s.blockchain = d.blockchain.success ? "success" : "failed";
+  if (d?.verification) s.verify = d.verification.status === "VERIFIED" ? "success" : "failed";
+  return s;
+}
+
 export function usePipeline() {
   const [state, setState] = useState<PipelineState>(EMPTY);
-  const esRef = useRef<EventSource | null>(null);
-
   const patch = (p: Partial<PipelineState>) => setState((s) => ({ ...s, ...p }));
-  const setStage = (key: string, status: StageMap[string]) =>
-    setState((s) => ({ ...s, stages: { ...s.stages, [key]: status } }));
 
-  const closeStream = () => {
-    esRef.current?.close();
-    esRef.current = null;
-  };
+  const reset = useCallback(() => setState(EMPTY), []);
 
-  const openStream = (scanId: string) => {
-    closeStream();
-    const es = new EventSource(eventsUrl(scanId));
-    es.onmessage = (msg) => {
-      try {
-        const ev = JSON.parse(msg.data) as PipelineEvent;
-        setState((s) => {
-          const stages = { ...s.stages };
-          const mapping = EVENT_STAGE[ev.event];
-          if (mapping) {
-            const [key, status] = mapping;
-            // Don't downgrade a completed stage back to processing.
-            if (!(stages[key] === "success" && status === "processing")) {
-              stages[key] = status;
-            }
-          }
-          return { ...s, stages, events: [...s.events, ev] };
-        });
-      } catch {
-        /* ignore keepalives */
-      }
-    };
-    es.onerror = () => {
-      /* stream ends when scan completes; ignore */
-    };
-    esRef.current = es;
-  };
+  const apply = (d: any) =>
+    patch({
+      scanId: d.scan_id ?? null,
+      face: d.face ?? null,
+      search: d.search ?? null,
+      fingerprint: d.fingerprint ?? null,
+      blockchain: d.blockchain ?? null,
+      verification: d.verification ?? null,
+      events: d.events ?? [],
+      stages: stagesFromResult(d),
+    });
 
-  const reset = useCallback(() => {
-    closeStream();
-    setState(EMPTY);
+  const run = useCallback(async (file: File, query?: string) => {
+    setState({ ...EMPTY, running: true, scanId: "pending", stages: allStages("processing") });
+    try {
+      const d = await runPipeline(file, query, false);
+      apply(d);
+    } catch (e) {
+      patch({ error: parseError(e).message, stages: initialStages() });
+    } finally {
+      patch({ running: false });
+    }
   }, []);
 
+  // Re-run the whole pipeline; with a tamper override it returns TAMPERED.
   const reVerify = useCallback(
-    async (overrides?: TamperOverrides) => {
-      if (!state.scanId) return;
+    async (overrides?: { caption?: string }) => {
+      // We need the original image to re-run; the caller keeps it and passes it in.
+      // Here we just flip verification using a fresh tamper run when possible.
+      patch({ stages: { ...state.stages, verify: "processing" } });
       try {
-        setStage("verify", "processing");
-        const v = await verify(state.scanId, overrides);
-        patch({ verification: v });
-        setStage("verify", v.status === "VERIFIED" ? "success" : "failed");
+        const file = (window as any).__faceproofLastFile as File | undefined;
+        if (!file) return;
+        const d = await runPipeline(file, state.search?.provider === "google_cse" ? undefined : undefined, !!overrides);
+        patch({
+          verification: d.verification ?? null,
+          blockchain: d.blockchain ?? state.blockchain,
+          stages: { ...state.stages, verify: d.verification?.status === "VERIFIED" ? "success" : "failed" },
+        });
       } catch (e) {
         patch({ error: parseError(e).message });
       }
     },
-    [state.scanId]
+    [state.stages, state.search, state.blockchain]
   );
 
-  const run = useCallback(async (file: File, query?: string) => {
-    setState({ ...EMPTY, running: true, stages: initialStages() });
-    let scanId = "";
-    try {
-      // 1) upload
-      const created = await createScan(file);
-      scanId = created.scan_id;
-      patch({ scanId });
-      setStage("upload", "success");
-      openStream(scanId);
+  // remember the last uploaded file for the tamper re-run
+  const runAndRemember = useCallback(
+    async (file: File, query?: string) => {
+      (window as any).__faceproofLastFile = file;
+      await run(file, query);
+    },
+    [run]
+  );
 
-      // 2) face + embedding
-      setStage("face", "processing");
-      const face = await analyzeFace(scanId);
-      patch({ face });
-      setStage("face", face.warning ? "warning" : "success");
-      setStage("embedding", "success");
-
-      // 3) search + candidate matching
-      setStage("search", "processing");
-      const search = await runSearch(scanId, query);
-      patch({ search });
-      setStage("search", "success");
-
-      if (search.best_candidate_id === null || search.best_candidate_id === undefined) {
-        setStage("match", "failed");
-        throw new Error("No sufficiently similar public result was found.");
-      }
-      setStage("match", search.potential_match ? "success" : "warning");
-
-      // 4) select best evidence
-      await selectMatch(scanId, search.best_candidate_id);
-
-      // 5) fingerprint
-      setStage("fingerprint", "processing");
-      const fp = await generateFingerprint(scanId);
-      patch({ fingerprint: fp });
-      setStage("fingerprint", "success");
-
-      // 6) blockchain
-      setStage("blockchain", "processing");
-      const chain = await registerBlockchain(scanId);
-      patch({ blockchain: chain });
-      setStage("blockchain", chain.success ? "success" : "failed");
-      if (!chain.success) {
-        throw new Error(chain.error || "Blockchain registration failed.");
-      }
-
-      // 7) verify
-      setStage("verify", "processing");
-      const v = await verify(scanId);
-      patch({ verification: v });
-      setStage("verify", v.status === "VERIFIED" ? "success" : "failed");
-    } catch (e) {
-      patch({ error: parseError(e).message });
-    } finally {
-      patch({ running: false });
-      // Let SSE flush, then close.
-      setTimeout(closeStream, 1200);
-    }
-  }, []);
-
-  return { state, run, reset, reVerify };
+  return { state, run: runAndRemember, reset, reVerify };
 }
