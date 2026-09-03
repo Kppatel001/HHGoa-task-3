@@ -15,7 +15,7 @@ from app.core.logging import get_logger
 from app.core.security import ALLOWED_EXTENSIONS, sniff_image_mime
 from app.db import SessionLocal
 from app.models import BlockchainRecord, PipelineEvent, Scan
-from app.services import fingerprint_service, verification_service
+from app.services import fingerprint_service, firebase_store, verification_service
 from app.services.blockchain_service import get_blockchain_service
 from app.services.face_service import get_face_service
 from app.services.search_service import run_search
@@ -373,3 +373,24 @@ def _update_record_verification(state: ScanState, status: str) -> None:
         log.warning("update verification failed: %s", exc)
     finally:
         db.close()
+
+    # Durable persistence to Firebase (survives serverless restarts) when enabled.
+    if firebase_store.enabled():
+        from datetime import datetime, timezone
+
+        bc = state.blockchain or {}
+        firebase_store.save_record(
+            {
+                "record_id": bc.get("record_id"),
+                "scan_id": state.scan_id,
+                "fingerprint": bc.get("fingerprint", ""),
+                "transaction_hash": bc.get("transaction_hash") or "",
+                "block_number": bc.get("block_number"),
+                "network_chain_id": bc.get("network_chain_id"),
+                "platform": (state.selected or {}).get("platform", "") or "",
+                "status": bc.get("status", ""),
+                "verification_status": status,
+                "similarity": (state.selected or {}).get("similarity"),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )

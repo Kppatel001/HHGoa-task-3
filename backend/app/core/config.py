@@ -45,10 +45,12 @@ class Settings(BaseSettings):
     )
     face_min_pixels: int = Field(default=60, alias="FACE_MIN_PIXELS")
 
-    # Search
-    search_provider: str = Field(default="demo", alias="SEARCH_PROVIDER")
+    # Search — genuine Google Programmable Search by default.
+    # Only GOOGLE_CSE_API_KEY must be supplied at runtime (as a secret env var).
+    # Set SEARCH_PROVIDER=demo to use the bundled local fixtures instead.
+    search_provider: str = Field(default="google_cse", alias="SEARCH_PROVIDER")
     google_cse_api_key: str = Field(default="", alias="GOOGLE_CSE_API_KEY")
-    google_cse_cx: str = Field(default="", alias="GOOGLE_CSE_CX")
+    google_cse_cx: str = Field(default="e7a1f794d6d134d25", alias="GOOGLE_CSE_CX")
     search_max_results: int = Field(default=8, alias="SEARCH_MAX_RESULTS")
     search_http_timeout: float = Field(default=15.0, alias="SEARCH_HTTP_TIMEOUT")
     candidate_max_image_bytes: int = Field(
@@ -70,8 +72,18 @@ class Settings(BaseSettings):
     # Empty -> derive path relative to the repo (contracts/deployments).
     deployments_dir: str = Field(default="", alias="DEPLOYMENTS_DIR")
 
+    # Firebase Realtime Database (optional, durable record/history store).
+    # Set FIREBASE_DB_URL to enable it; otherwise the local SQLite DB is used.
+    # Lightweight REST integration (no heavy SDK) so it works on serverless too.
+    firebase_db_url: str = Field(default="", alias="FIREBASE_DB_URL")
+    firebase_db_secret: str = Field(default="", alias="FIREBASE_DB_SECRET")
+
     # Logging
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+
+    @property
+    def firebase_enabled(self) -> bool:
+        return bool(self.firebase_db_url)
 
     @field_validator("face_match_threshold")
     @classmethod
