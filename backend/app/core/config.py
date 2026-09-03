@@ -95,7 +95,19 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]
+    s = Settings()  # type: ignore[call-arg]
+    # On Vercel (or any serverless host) the filesystem is read-only except
+    # /tmp, so force writable paths and the stateless-friendly modes there.
+    import os as _os
+
+    if _os.environ.get("VERCEL") or _os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        if s.database_url.startswith("sqlite") and "/tmp/" not in s.database_url:
+            s.database_url = "sqlite:////tmp/faceproof.db"
+        if not s.upload_dir.startswith("/tmp"):
+            s.upload_dir = "/tmp/uploads"
+        # In-process EVM needs no external node — the only fit for serverless.
+        s.blockchain_mode = "memory"
+    return s
 
 
 settings = get_settings()

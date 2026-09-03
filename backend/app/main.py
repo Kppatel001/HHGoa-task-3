@@ -46,17 +46,29 @@ DISCLAIMER = (
     "A similarity score indicates a POTENTIAL match, not a definitive identity."
 )
 
+_SERVERLESS = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    os.makedirs(settings.upload_dir, exist_ok=True)
-    init_db()
-    log.info("[BOOT] database ready url=%s", settings.database_url.split("://")[0])
-    if get_face_service().warmup():
-        log.info("[BOOT] face model warm")
-    else:
-        log.warning("[BOOT] face model not loaded yet (will retry on first request)")
-    status = get_blockchain_service().status()
-    log.info("[BOOT] blockchain connected=%s", status.get("connected"))
+    # Never let startup crash the process (serverless FS is read-only outside /tmp).
+    try:
+        os.makedirs(settings.upload_dir, exist_ok=True)
+    except OSError as exc:
+        log.warning("[BOOT] upload dir not writable: %s", exc)
+    try:
+        init_db()
+        log.info("[BOOT] database ready url=%s", settings.database_url.split("://")[0])
+    except Exception as exc:  # noqa: BLE001
+        log.error("[BOOT] db init failed: %s", exc)
+    # On serverless, skip heavy cold-start work — face + chain load lazily on
+    # first request instead (keeps cold starts fast and within time limits).
+    if not _SERVERLESS:
+        if get_face_service().warmup():
+            log.info("[BOOT] face engine warm")
+        else:
+            log.warning("[BOOT] face engine will load on first request")
+        log.info("[BOOT] blockchain connected=%s", get_blockchain_service().status().get("connected"))
     yield
 
 
