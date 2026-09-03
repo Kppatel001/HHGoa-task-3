@@ -38,7 +38,10 @@ async def run_pipeline(
         await pipeline.do_search(state, query)
 
         best_id = (state.search or {}).get("best_candidate_id")
-        if best_id is None:
+        potential = (state.search or {}).get("potential_match")
+        # Only proceed when a candidate actually clears the similarity threshold —
+        # never fingerprint/register a non-match.
+        if best_id is None or not potential:
             state.emit("pipeline_failed", {"reason": "no_match"})
             state.done = True
             raise PipelineError(

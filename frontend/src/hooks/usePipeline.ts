@@ -81,7 +81,16 @@ export function usePipeline() {
       const d = await runPipeline(file, query, false);
       apply(d);
     } catch (e) {
-      patch({ error: parseError(e).message, stages: initialStages() });
+      const err = parseError(e);
+      const s = { ...initialStages() };
+      if (err.code === "no_face" || err.code === "invalid_image") {
+        s.upload = "success"; s.face = "failed";
+      } else if (err.code === "no_match") {
+        s.upload = "success"; s.face = "success"; s.embedding = "success"; s.search = "success"; s.match = "failed";
+      } else if (err.code === "search_unavailable") {
+        s.upload = "success"; s.face = "success"; s.embedding = "success"; s.search = "failed";
+      }
+      patch({ error: err.message, stages: s });
     } finally {
       patch({ running: false });
     }
