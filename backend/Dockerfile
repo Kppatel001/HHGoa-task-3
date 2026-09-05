@@ -1,14 +1,21 @@
 FROM python:3.11-slim
 
-# System libs required by OpenCV / InsightFace / onnxruntime.
+# System libs for OpenCV + build tools so InsightFace's Cython ext compiles.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 libgl1 libgomp1 curl \
+    build-essential cmake \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-insightface.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir "numpy==1.26.4" "Cython>=0.29" && \
+    pip install --no-cache-dir -r requirements.txt
+# Genuine cross-photo face recognition (ArcFace). Non-fatal if it can't build —
+# the app falls back to the OpenCV engine automatically.
+RUN pip install --no-cache-dir -r requirements-insightface.txt || \
+    echo "InsightFace not installed; using OpenCV engine"
 
 COPY . .
 
