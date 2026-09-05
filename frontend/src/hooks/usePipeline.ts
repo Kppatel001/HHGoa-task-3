@@ -79,7 +79,28 @@ export function usePipeline() {
     setState({ ...EMPTY, running: true, scanId: "pending", stages: allStages("processing") });
     try {
       const d = await runPipeline(file, query, false);
-      apply(d);
+      if (d && d.notice) {
+        // Expected outcome (no face / no match / search unavailable) — 200 + notice.
+        const s = { ...initialStages() };
+        const code = d.notice.code;
+        if (code === "no_face" || code === "invalid_image") {
+          s.upload = "success"; s.face = "failed";
+        } else if (code === "no_match") {
+          s.upload = "success"; s.face = "success"; s.embedding = "success"; s.search = "success"; s.match = "failed";
+        } else if (code === "search_unavailable") {
+          s.upload = "success"; s.face = "success"; s.embedding = "success"; s.search = "failed";
+        }
+        patch({
+          scanId: d.scan_id ?? null,
+          face: d.face ?? null,
+          search: d.search ?? null,
+          events: d.events ?? [],
+          error: d.notice.message,
+          stages: s,
+        });
+      } else {
+        apply(d);
+      }
     } catch (e) {
       const err = parseError(e);
       const s = { ...initialStages() };
