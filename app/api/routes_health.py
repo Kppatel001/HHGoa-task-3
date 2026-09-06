@@ -13,18 +13,6 @@ router = APIRouter(tags=["health"])
 _START = time.time()
 
 
-def _firebase_component():
-    from app.services import firebase_store
-
-    if not firebase_store.enabled():
-        return {"status": "sqlite", "store": "sqlite (local/ephemeral)"}
-    h = firebase_store.health()
-    return {
-        "status": "online" if h.get("connected") else "offline",
-        "store": "firebase-rtdb",
-    }
-
-
 @router.get("/health")
 def health():
     face = get_face_service()
@@ -69,7 +57,6 @@ def system_status():
                 "chain_id": chain_status.get("chain_id"),
             },
             "api": {"status": "online"},
-            "database": _firebase_component(),
         },
         "config": {
             "face_match_threshold": settings.face_match_threshold,

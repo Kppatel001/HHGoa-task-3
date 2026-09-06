@@ -75,7 +75,10 @@ class Settings(BaseSettings):
     # Firebase Realtime Database (optional, durable record/history store).
     # Set FIREBASE_DB_URL to enable it; otherwise the local SQLite DB is used.
     # Lightweight REST integration (no heavy SDK) so it works on serverless too.
-    firebase_db_url: str = Field(default="", alias="FIREBASE_DB_URL")
+    firebase_db_url: str = Field(
+        default="https://faceproof-1a326-default-rtdb.firebaseio.com",
+        alias="FIREBASE_DB_URL",
+    )
     firebase_db_secret: str = Field(default="", alias="FIREBASE_DB_SECRET")
 
     # Logging
@@ -119,6 +122,11 @@ def get_settings() -> Settings:
             s.upload_dir = "/tmp/uploads"
         # In-process EVM needs no external node — the only fit for serverless.
         s.blockchain_mode = "memory"
+        # Zero-config safety: genuine Google search needs an API key. If none is
+        # supplied, fall back to the bundled demo dataset so the pipeline always
+        # works out of the box instead of dead-ending on "search unavailable".
+        if s.search_provider.lower() == "google_cse" and not s.google_cse_api_key:
+            s.search_provider = "demo"
     return s
 
 

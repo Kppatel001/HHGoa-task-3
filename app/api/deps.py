@@ -25,16 +25,11 @@ def build_pipeline_response(state: ScanState) -> dict:
             "source_url": state.selected.get("url"),
             "platform": state.selected.get("platform"),
         }
-    # Include candidate list in the search block so the UI can render result
-    # cards from a single /api/pipeline response (stateless / serverless-safe).
-    search = None
-    if state.search is not None:
-        search = {**state.search, "candidates": state.candidates}
     return {
         "scan_id": state.scan_id,
         "status": state.status,
         "face": state.face,
-        "search": search,
+        "search": state.search,
         "match": match,
         "fingerprint": state.fingerprint,
         "blockchain": state.blockchain,

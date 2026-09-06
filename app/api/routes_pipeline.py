@@ -27,17 +27,11 @@ async def run_pipeline(
     -> fingerprint -> blockchain -> verify. Each stage is genuine; failures are
     reported honestly rather than faked.
     """
-    # Business outcomes (no face, no match, search unavailable) are returned as
-    # 200 with a `notice` so the browser console stays clean — they're expected
-    # results, not server errors. Only genuinely invalid requests use 4xx.
-    SOFT = {"no_face", "no_match", "search_unavailable", "invalid_image"}
-
     started = time.perf_counter()
     data = await file.read()
     scan_id = f"scan_{uuid.uuid4().hex[:16]}"
     state = store.create(scan_id, query=query)
 
-    notice = None
     try:
         pipeline.save_upload(state, file.filename or "upload", data)
         pipeline.analyze_face(state)
@@ -45,30 +39,31 @@ async def run_pipeline(
 
         best_id = (state.search or {}).get("best_candidate_id")
         potential = (state.search or {}).get("potential_match")
+        # Only proceed when a candidate actually clears the similarity threshold —
+        # never fingerprint/register a non-match.
         if best_id is None or not potential:
             state.emit("pipeline_failed", {"reason": "no_match"})
-            raise PipelineError("no_match", "No sufficiently similar public result found.", 422)
-
+            state.done = True
+            raise PipelineError(
+                "no_match", "No sufficiently similar public result found.", 422
+            )
         pipeline.select_match(state, best_id)
         pipeline.make_fingerprint(state)
         pipeline.register_chain(state)
+
+        # Verify (optionally simulate tampering to demonstrate detection).
         overrides = {"caption": "TAMPERED — content modified after registration"} if simulate_tamper else None
         pipeline.do_verify(state, overrides)
     except SearchUnavailableError as exc:
         state.emit("pipeline_failed", {"reason": "search_unavailable"})
-        notice = {"code": "search_unavailable", "message": str(exc)}
+        state.done = True
+        raise HTTPException(status_code=502, detail={"code": "search_unavailable", "message": str(exc)})
     except PipelineError as exc:
-        if exc.code in SOFT:
-            notice = {"code": exc.code, "message": exc.message}
-        else:
-            state.done = True
-            raise HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.message})
+        state.done = True
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.code, "message": exc.message})
     finally:
         state.metrics["total_ms"] = int((time.perf_counter() - started) * 1000)
         pipeline.cleanup_upload(state)
 
     state.done = True
-    resp = build_pipeline_response(state)
-    if notice:
-        resp["notice"] = notice
-    return resp
+    return build_pipeline_response(state)

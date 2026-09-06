@@ -41,16 +41,6 @@ def blockchain_status():
 @router.get("/blockchain/records")
 def list_records():
     chain = get_blockchain_service()
-    # Durable store first (Firebase) when configured — survives serverless restarts.
-    from app.services import firebase_store
-
-    if firebase_store.enabled():
-        rows = firebase_store.list_records()
-        for r in rows:
-            tx = r.get("transaction_hash")
-            r["transaction_url"] = chain.explorer_tx_url(tx) if tx else None
-        return {"records": rows, "explorer": settings.block_explorer_url or None, "store": "firebase"}
-
     db = SessionLocal()
     try:
         rows = db.query(BlockchainRecord).order_by(BlockchainRecord.created_at.desc()).all()

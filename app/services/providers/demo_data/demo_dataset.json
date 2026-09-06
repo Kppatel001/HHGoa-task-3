@@ -1,31 +1,45 @@
 {
   "label": "DEMO DATASET",
+  "note": "Synthetic GAN faces (no real people). Fixtures only \u2014 not a real web search.",
   "subject_upload": "subject.jpg",
   "entries": [
     {
       "local_image": "gan_0.jpg",
       "url": "https://example.com/demo/press-release-42",
-      "platform": "DEMO - Public Web Fixture",
+      "image_url": null,
+      "platform": "DEMO \u2014 Public Web Fixture",
       "title": "Community Volunteer of the Month (DEMO)",
-      "caption": "Public appreciation post featuring the demo subject.",
+      "caption": "Public appreciation post featuring the demo subject. DEMO DATASET \u2014 synthetic face, not a real person.",
       "author": "Demo City News",
       "published_at": "2026-08-20T10:00:00Z"
     },
     {
       "local_image": "gan_1.jpg",
-      "url": "https://example.com/demo/gallery-7",
-      "platform": "DEMO - Public Web Fixture",
-      "title": "Event gallery photo (DEMO)",
-      "caption": "Another public photo.",
+      "url": "https://example.com/demo/unrelated-1",
+      "image_url": null,
+      "platform": "DEMO \u2014 Public Web Fixture",
+      "title": "Unrelated public photo #1 (DEMO)",
+      "caption": "DEMO DATASET \u2014 synthetic face, unrelated distractor.",
       "author": "Demo Wire",
-      "published_at": "2026-08-18T09:00:00Z"
+      "published_at": "2026-08-15T09:00:00Z"
     },
     {
       "local_image": "gan_2.jpg",
-      "url": "https://example.com/demo/unrelated",
-      "platform": "DEMO - Public Web Fixture",
-      "title": "Unrelated graphic (DEMO)",
-      "caption": "No face here.",
+      "url": "https://example.com/demo/unrelated-2",
+      "image_url": null,
+      "platform": "DEMO \u2014 Public Web Fixture",
+      "title": "Unrelated public photo #2 (DEMO)",
+      "caption": "DEMO DATASET \u2014 synthetic face, unrelated distractor.",
+      "author": "Demo Wire",
+      "published_at": "2026-08-15T09:00:00Z"
+    },
+    {
+      "local_image": "gan_3.jpg",
+      "url": "https://example.com/demo/unrelated-3",
+      "image_url": null,
+      "platform": "DEMO \u2014 Public Web Fixture",
+      "title": "Unrelated public photo #3 (DEMO)",
+      "caption": "DEMO DATASET \u2014 synthetic face, unrelated distractor.",
       "author": "Demo Wire",
       "published_at": "2026-08-15T09:00:00Z"
     }
