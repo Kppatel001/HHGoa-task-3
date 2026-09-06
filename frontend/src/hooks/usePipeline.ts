@@ -6,6 +6,7 @@ import type {
   BlockchainResult,
   FaceAnalysis,
   Fingerprint,
+  MatchResult,
   PipelineEvent,
   SearchSummary,
   VerificationResult,
@@ -18,6 +19,7 @@ export interface PipelineState {
   events: PipelineEvent[];
   face: FaceAnalysis | null;
   search: SearchSummary | null;
+  match: MatchResult | null;
   fingerprint: Fingerprint | null;
   blockchain: BlockchainResult | null;
   verification: VerificationResult | null;
@@ -31,6 +33,7 @@ const EMPTY: PipelineState = {
   events: [],
   face: null,
   search: null,
+  match: null,
   fingerprint: null,
   blockchain: null,
   verification: null,
@@ -48,9 +51,15 @@ function stagesFromResult(d: any): StageMap {
   if (d?.face?.face_detected) { s.face = d.face.warning ? "warning" : "success"; s.embedding = "success"; }
   else if (d?.face) s.face = "failed";
   if (d?.search) s.search = "success";
-  const sim = d?.match?.similarity;
-  const thr = d?.search?.threshold;
-  if (sim != null && thr != null) s.match = sim >= thr ? "success" : "warning";
+  // Matching is informational, never fatal: a public match OR "original content"
+  // both let the pipeline continue, so the stage is a success in both cases.
+  if (d?.match) {
+    if (d.match.status === "original_content" || d.match.matched || d.match.status === "potential_match") {
+      s.match = "success";
+    } else {
+      s.match = "warning";
+    }
+  }
   if (d?.fingerprint) s.fingerprint = "success";
   if (d?.blockchain) s.blockchain = d.blockchain.success ? "success" : "failed";
   if (d?.verification) s.verify = d.verification.status === "VERIFIED" ? "success" : "failed";
@@ -68,6 +77,7 @@ export function usePipeline() {
       scanId: d.scan_id ?? null,
       face: d.face ?? null,
       search: d.search ?? null,
+      match: d.match ?? null,
       fingerprint: d.fingerprint ?? null,
       blockchain: d.blockchain ?? null,
       verification: d.verification ?? null,

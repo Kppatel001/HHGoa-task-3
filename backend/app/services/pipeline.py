@@ -193,6 +193,34 @@ def select_match(state: ScanState, result_id: int) -> Dict[str, Any]:
     }
 
 
+def select_uploaded_content(state: ScanState) -> Dict[str, Any]:
+    """No sufficiently similar PUBLIC image was found.
+
+    This is a normal, expected outcome — original or authorized content usually
+    has no public duplicate. Instead of stopping, we register and verify the
+    integrity of the UPLOADED content itself (content-authenticity mode). We
+    fingerprint the actual uploaded image bytes; no public identity is asserted.
+    """
+    media_sha = None
+    if state.image_bytes is not None:
+        media_sha = fingerprint_service.compute_media_hash(state.image_bytes, None)
+    title = os.path.basename(state.image_path or "uploaded-image")
+    state.selected = {
+        "url": "",
+        "platform": "Uploaded content",
+        "title": title,
+        "description": None,
+        "author": None,
+        "published_at": None,
+        "similarity": None,
+        "origin": "uploaded",  # marker: original content, not a public match
+    }
+    state.selected_media_sha256 = media_sha
+    state.status = "match_selected"
+    state.emit("candidate_match_found", {"origin": "uploaded", "mode": "original_content"})
+    return {"status": "original_content", "similarity": None, "media_sha256": media_sha}
+
+
 # --------------------------------------------------------------------------- #
 # Stage 5 — fingerprint
 # --------------------------------------------------------------------------- #

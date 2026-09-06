@@ -119,6 +119,11 @@ def get_settings() -> Settings:
             s.upload_dir = "/tmp/uploads"
         # In-process EVM needs no external node — the only fit for serverless.
         s.blockchain_mode = "memory"
+        # Zero-config safety: genuine Google search needs an API key. If none is
+        # supplied, fall back to the bundled demo dataset so the pipeline always
+        # works out of the box instead of dead-ending on "search unavailable".
+        if s.search_provider.lower() == "google_cse" and not s.google_cse_api_key:
+            s.search_provider = "demo"
     return s
 
 

@@ -45,11 +45,14 @@ async def run_pipeline(
 
         best_id = (state.search or {}).get("best_candidate_id")
         potential = (state.search or {}).get("potential_match")
-        if best_id is None or not potential:
-            state.emit("pipeline_failed", {"reason": "no_match"})
-            raise PipelineError("no_match", "No sufficiently similar public result found.", 422)
-
-        pipeline.select_match(state, best_id)
+        if best_id is not None and potential:
+            # A sufficiently similar public image was found — fingerprint it.
+            pipeline.select_match(state, best_id)
+        else:
+            # No public match (the normal case for original/authorized content).
+            # Register + verify the UPLOADED content itself — the pipeline never
+            # dead-ends on "no match"; it always produces a real, verifiable record.
+            pipeline.select_uploaded_content(state)
         pipeline.make_fingerprint(state)
         pipeline.register_chain(state)
         overrides = {"caption": "TAMPERED — content modified after registration"} if simulate_tamper else None
