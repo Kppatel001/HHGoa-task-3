@@ -1,3 +1,4 @@
+// build: matching-content + firebase fix (rebuild trigger)
 import { useCallback, useState } from "react";
 import { parseError } from "../api/client";
 import { runPipeline } from "../api/scanApi";
@@ -130,13 +131,11 @@ export function usePipeline() {
   // Re-run the whole pipeline; with a tamper override it returns TAMPERED.
   const reVerify = useCallback(
     async (overrides?: { caption?: string }) => {
-      // We need the original image to re-run; the caller keeps it and passes it in.
-      // Here we just flip verification using a fresh tamper run when possible.
       patch({ stages: { ...state.stages, verify: "processing" } });
       try {
         const file = (window as any).__faceproofLastFile as File | undefined;
         if (!file) return;
-        const d = await runPipeline(file, state.search?.provider === "google_cse" ? undefined : undefined, !!overrides);
+        const d = await runPipeline(file, undefined, !!overrides);
         patch({
           verification: d.verification ?? null,
           blockchain: d.blockchain ?? state.blockchain,
