@@ -66,12 +66,21 @@ def list_records() -> List[Dict[str, Any]]:
 
 
 def health() -> Dict[str, Any]:
-    """Quick connectivity check for the status endpoint."""
+    """Quick connectivity check for the status endpoint.
+
+    Uses a shallow GET on the database root (a real REST path) — the previous
+    probe hit `.info/serverTimeOffset`, which the RTDB REST API does not expose,
+    so it always looked offline even when reads/writes worked.
+    """
     if not enabled():
         return {"enabled": False}
     try:
+        base = settings.firebase_db_url.rstrip("/")
+        url = base + "/.json?shallow=true"
+        if settings.firebase_db_secret:
+            url += "&auth=" + settings.firebase_db_secret
         with httpx.Client(timeout=8.0) as c:
-            r = c.get(_url(".info/serverTimeOffset"))
+            r = c.get(url)
         return {"enabled": True, "connected": r.status_code == 200}
     except Exception as exc:  # noqa: BLE001
         return {"enabled": True, "connected": False, "error": str(exc)}
